@@ -280,7 +280,7 @@ function atualizar(){
 
 document.getElementById('periodo').addEventListener('change', atualizar);
 
-Papa.parse('base_abastecimentos.csv', {
+Papa.parse('base_abastecimentos.csv?v=' + Date.now(), {
   download: true,
   header: true,
   dynamicTyping: true,
