@@ -121,6 +121,17 @@ def extrair_dados_nfe(caminho_xml):
     km_atual = parse_numero_livre(km_atual_txt)
     media = parse_numero_livre(media_txt)
 
+    # Alguns postos gravam um valor de erro/placeholder no odometro (ex:
+    # 9999999) quando o equipamento falha em capturar o km real. Tratamos
+    # isso como dado ausente, para nao contaminar o calculo de km rodado.
+    def km_invalido(v):
+        return v is not None and v >= 9999990
+
+    if km_invalido(km_atual):
+        km_atual = None
+    if km_invalido(km_anterior):
+        km_anterior = None
+
     km_rodado = None
     if km_anterior is not None and km_atual is not None:
         km_rodado = km_atual - km_anterior
