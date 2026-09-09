@@ -96,9 +96,14 @@ def extrair_dados_nfe(caminho_xml):
     for p in produtos:
         qcom_el = p.find("nfe:qCom", NS)
         xprod_el = p.find("nfe:xProd", NS)
-        if qcom_el is not None and qcom_el.text:
+        ucom_el = p.find("nfe:uCom", NS)
+        # So soma quantidade como "litros" se a unidade de venda for
+        # realmente Litro (L). Isso evita somar, por engano, unidades de
+        # itens de conveniencia (cigarro, agua, etc.) vendidos na mesma nota.
+        eh_litro = ucom_el is not None and ucom_el.text and ucom_el.text.strip().upper() == "L"
+        if eh_litro and qcom_el is not None and qcom_el.text:
             litros_total += float(qcom_el.text)
-        if xprod_el is not None and xprod_el.text:
+        if eh_litro and xprod_el is not None and xprod_el.text:
             nomes_produtos.append(xprod_el.text)
     combustivel_nome = " + ".join(dict.fromkeys(nomes_produtos)) if nomes_produtos else None
 
@@ -125,7 +130,10 @@ def extrair_dados_nfe(caminho_xml):
     # 9999999) quando o equipamento falha em capturar o km real. Tratamos
     # isso como dado ausente, para nao contaminar o calculo de km rodado.
     def km_invalido(v):
-        return v is not None and v >= 9999990
+        # Valores claramente de erro/placeholder do equipamento: muito
+        # altos (ex: 9999999) ou implausivelmente baixos (ex: 1) para um
+        # veiculo de frota que ja circula ha tempo.
+        return v is not None and (v >= 9999990 or v < 1000)
 
     if km_invalido(km_atual):
         km_atual = None
