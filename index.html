@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abastecimento — Frota</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --asfalto: #1c1f24;
+    --asfalto-2: #262a31;
+    --linha: #3a3f47;
+    --texto: #e8e6df;
+    --texto-fraco: #9aa0a8;
+    --diesel: #e8a13a;
+    --diesel-2: #f2c069;
+    --ok: #6fbf8b;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    background: var(--asfalto);
+    color: var(--texto);
+    font-family: 'Consolas', 'SF Mono', 'Courier New', monospace;
+    line-height: 1.5;
+  }
+  header{
+    padding: 28px 32px 22px;
+    border-bottom: 3px solid var(--diesel);
+    background: repeating-linear-gradient(135deg, var(--asfalto-2) 0 18px, #22262c 18px 36px);
+  }
+  header h1{
+    margin:0;
+    font-size: 1.6rem;
+    letter-spacing: 0.5px;
+  }
+  header h1 span{ color: var(--diesel); }
+  header p{ margin: 6px 0 0; color: var(--texto-fraco); font-size: 0.85rem; }
+
+  main{ max-width: 1180px; margin: 0 auto; padding: 24px 24px 60px; }
+
+  .painel{
+    background: var(--asfalto-2);
+    border: 1px solid var(--linha);
+    border-radius: 4px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .filtros{ display:flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; }
+  .filtro label{ display:block; font-size: 0.72rem; color: var(--texto-fraco); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+  select, .placa-chip{
+    background: var(--asfalto);
+    color: var(--texto);
+    border: 1px solid var(--linha);
+    border-radius: 3px;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 0.88rem;
+  }
+  .placas-lista{ display:flex; flex-wrap: wrap; gap: 8px; max-width: 520px; }
+  .placa-chip{ cursor:pointer; user-select:none; border-color: var(--linha); }
+  .placa-chip.ativo{ border-color: var(--diesel); color: var(--diesel-2); background:#33291a; }
+
+  .metricas{ display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; margin-bottom: 20px; }
+  .metrica{ background: var(--asfalto-2); border: 1px solid var(--linha); border-left: 4px solid var(--diesel); border-radius: 4px; padding: 14px 16px; }
+  .metrica .valor{ font-size: 1.6rem; font-weight: bold; color: var(--diesel-2); }
+  .metrica .rotulo{ font-size: 0.72rem; color: var(--texto-fraco); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+  .grafico-box{ position: relative; height: 320px; }
+  h2{ font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; color: var(--texto-fraco); margin: 0 0 16px; }
+
+  table{ width:100%; border-collapse: collapse; font-size: 0.82rem; }
+  th, td{ text-align:left; padding: 8px 10px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
+  th{ color: var(--texto-fraco); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
+  tbody tr:hover{ background: #2c313a; }
+  .sem-dado{ color: var(--texto-fraco); text-align:center; padding: 40px; }
+  .tabela-scroll{ overflow-x:auto; }
+  .aviso{ background:#3a2a1a; border:1px solid var(--diesel); color: var(--diesel-2); padding:10px 14px; border-radius:4px; font-size:0.82rem; margin-bottom:20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Abastecimento <span>/ Frota</span></h1>
+  <p>Km rodado e consumo por placa — dados extraídos automaticamente das notas fiscais de abastecimento</p>
+</header>
+
+<main>
+  <div class="painel">
+    <div class="filtros">
+      <div class="filtro">
+        <label>Agrupar por</label>
+        <select id="periodo">
+          <option value="dia">Dia</option>
+          <option value="mes" selected>Mês</option>
+          <option value="ano">Ano</option>
+        </select>
+      </div>
+      <div class="filtro" style="flex:1">
+        <label>Placas</label>
+        <div class="placas-lista" id="placas-lista"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="aviso-vazio" class="aviso" style="display:none">
+    Nenhum dado encontrado em <code>base_abastecimentos.csv</code>. Rode <code>processar_notas.py</code> e suba o CSV atualizado no repositório.
+  </div>
+
+  <div class="metricas" id="metricas"></div>
+
+  <div class="painel">
+    <h2>Km rodado por placa</h2>
+    <div class="grafico-box"><canvas id="grafico-km"></canvas></div>
+  </div>
+
+  <div class="painel">
+    <h2>Média de consumo (km/l) por placa</h2>
+    <div class="grafico-box"><canvas id="grafico-media"></canvas></div>
+  </div>
+
+  <div class="painel">
+    <h2>Notas detalhadas</h2>
+    <div class="tabela-scroll">
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th>Data</th><th>Placa</th><th>Motorista</th><th>Posto</th>
+            <th>Combustível</th><th>Litros</th><th>Valor</th><th>Km atual</th>
+            <th>Km rodado</th><th>Média</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const CORES = ['#e8a13a','#6fbf8b','#7aa9d9','#d97757','#c98bd9','#e0d15f','#63c9c1'];
+let dados = [];
+let placasAtivas = new Set();
+let chartKm, chartMedia;
+
+function corDaPlaca(placa){
+  const lista = [...new Set(dados.map(d=>d.placa))].sort();
+  return CORES[lista.indexOf(placa) % CORES.length];
+}
+
+function formatarNumero(n, casas=0){
+  if(n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('pt-BR', {minimumFractionDigits:casas, maximumFractionDigits:casas});
+}
+
+function periodoDaLinha(linha, tipo){
+  const d = new Date(linha.data_emissao);
+  if(isNaN(d)) return null;
+  if(tipo === 'dia') return d.toLocaleDateString('pt-BR');
+  if(tipo === 'ano') return String(d.getFullYear());
+  return String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+}
+
+function montarFiltroPlacas(){
+  const cont = document.getElementById('placas-lista');
+  const placas = [...new Set(dados.map(d=>d.placa).filter(Boolean))].sort();
+  placasAtivas = new Set(placas);
+  cont.innerHTML = '';
+  placas.forEach(p=>{
+    const chip = document.createElement('div');
+    chip.className = 'placa-chip ativo';
+    chip.textContent = p;
+    chip.onclick = () => {
+      if(placasAtivas.has(p)){ placasAtivas.delete(p); chip.classList.remove('ativo'); }
+      else { placasAtivas.add(p); chip.classList.add('ativo'); }
+      atualizar();
+    };
+    cont.appendChild(chip);
+  });
+}
+
+function atualizar(){
+  const tipoPeriodo = document.getElementById('periodo').value;
+  const filtrado = dados.filter(d => placasAtivas.has(d.placa));
+
+  // Metricas
+  const totalKm = filtrado.reduce((s,d)=> s + (d.km_rodado||0), 0);
+  const totalLitros = filtrado.reduce((s,d)=> s + (d.litros||0), 0);
+  const comMedia = filtrado.filter(d=> d.media_km_l);
+  const mediaGeral = totalLitros>0 ? totalKm/totalLitros : null;
+
+  document.getElementById('metricas').innerHTML = `
+    <div class="metrica"><div class="valor">${filtrado.length}</div><div class="rotulo">Abastecimentos</div></div>
+    <div class="metrica"><div class="valor">${formatarNumero(totalKm)}</div><div class="rotulo">Km rodado total</div></div>
+    <div class="metrica"><div class="valor">${formatarNumero(totalLitros,1)}</div><div class="rotulo">Litros totais</div></div>
+    <div class="metrica"><div class="valor">${mediaGeral? formatarNumero(mediaGeral,2) : '—'}</div><div class="rotulo">Média geral (km/l)</div></div>
+  `;
+
+  // Agrupamento por periodo + placa
+  const grupos = {};
+  filtrado.forEach(d=>{
+    const per = periodoDaLinha(d, tipoPeriodo);
+    if(!per) return;
+    const chave = per + '||' + d.placa;
+    if(!grupos[chave]) grupos[chave] = {periodo: per, placa: d.placa, km:0, litros:0};
+    grupos[chave].km += (d.km_rodado||0);
+    grupos[chave].litros += (d.litros||0);
+  });
+  const linhasAgrupadas = Object.values(grupos);
+  const periodos = [...new Set(linhasAgrupadas.map(l=>l.periodo))].sort();
+  const placas = [...placasAtivas].sort();
+
+  const datasetsKm = placas.map(p=>({
+    label: p,
+    backgroundColor: corDaPlaca(p),
+    data: periodos.map(per=>{
+      const item = linhasAgrupadas.find(l=>l.periodo===per && l.placa===p);
+      return item ? item.km : 0;
+    })
+  }));
+
+  const datasetsMedia = placas.map(p=>({
+    label: p,
+    borderColor: corDaPlaca(p),
+    backgroundColor: corDaPlaca(p),
+    tension: 0.25,
+    data: periodos.map(per=>{
+      const item = linhasAgrupadas.find(l=>l.periodo===per && l.placa===p);
+      return item && item.litros>0 ? +(item.km/item.litros).toFixed(2) : null;
+    })
+  }));
+
+  const opcoesComuns = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{ color:'#e8e6df' } } },
+    scales:{
+      x:{ ticks:{ color:'#9aa0a8' }, grid:{ color:'#3a3f47' } },
+      y:{ ticks:{ color:'#9aa0a8' }, grid:{ color:'#3a3f47' } }
+    }
+  };
+
+  if(chartKm) chartKm.destroy();
+  chartKm = new Chart(document.getElementById('grafico-km'), {
+    type:'bar',
+    data:{ labels: periodos, datasets: datasetsKm },
+    options: opcoesComuns
+  });
+
+  if(chartMedia) chartMedia.destroy();
+  chartMedia = new Chart(document.getElementById('grafico-media'), {
+    type:'line',
+    data:{ labels: periodos, datasets: datasetsMedia },
+    options: opcoesComuns
+  });
+
+  // Tabela
+  const tbody = document.querySelector('#tabela tbody');
+  tbody.innerHTML = '';
+  filtrado
+    .slice()
+    .sort((a,b)=> new Date(b.data_emissao) - new Date(a.data_emissao))
+    .forEach(d=>{
+      const tr = document.createElement('tr');
+      const data = new Date(d.data_emissao);
+      tr.innerHTML = `
+        <td>${isNaN(data)?'—':data.toLocaleDateString('pt-BR')}</td>
+        <td>${d.placa||'—'}</td>
+        <td>${d.motorista||'—'}</td>
+        <td>${d.posto||'—'}</td>
+        <td>${d.combustivel||'—'}</td>
+        <td>${formatarNumero(d.litros,1)}</td>
+        <td>R$ ${formatarNumero(d.valor_total,2)}</td>
+        <td>${formatarNumero(d.km_atual)}</td>
+        <td>${d.km_rodado? formatarNumero(d.km_rodado):'—'}</td>
+        <td>${d.media_km_l? formatarNumero(d.media_km_l,2):'—'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+}
+
+document.getElementById('periodo').addEventListener('change', atualizar);
+
+Papa.parse('base_abastecimentos.csv', {
+  download: true,
+  header: true,
+  dynamicTyping: true,
+  skipEmptyLines: true,
+  complete: function(resultado){
+    dados = resultado.data;
+    if(!dados.length){
+      document.getElementById('aviso-vazio').style.display = 'block';
+      return;
+    }
+    montarFiltroPlacas();
+    atualizar();
+  },
+  error: function(){
+    document.getElementById('aviso-vazio').style.display = 'block';
+  }
+});
+</script>
+</body>
+</html>
