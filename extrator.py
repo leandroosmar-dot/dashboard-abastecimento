@@ -84,9 +84,32 @@ def extrair_dados_nfe(caminho_xml):
     ide = root.find(".//nfe:ide", NS)
     emit = root.find(".//nfe:emit", NS)
     dest = root.find(".//nfe:dest", NS)
-    prod = root.find(".//nfe:det/nfe:prod", NS)
+    # Uma nota pode ter mais de um produto (ex: dois tipos de diesel na
+    # mesma compra) - somamos todos, em vez de olhar so o primeiro.
+    produtos = root.findall(".//nfe:det/nfe:prod", NS)
     infCpl_el = root.find(".//nfe:infAdic/nfe:infCpl", NS)
     chave_el = root.find(".//nfe:infProt/nfe:chNFe", NS)
+    vNF_el = root.find(".//nfe:total/nfe:ICMSTot/nfe:vNF", NS)
+
+    litros_total = 0.0
+    nomes_produtos = []
+    for p in produtos:
+        qcom_el = p.find("nfe:qCom", NS)
+        xprod_el = p.find("nfe:xProd", NS)
+        if qcom_el is not None and qcom_el.text:
+            litros_total += float(qcom_el.text)
+        if xprod_el is not None and xprod_el.text:
+            nomes_produtos.append(xprod_el.text)
+    combustivel_nome = " + ".join(dict.fromkeys(nomes_produtos)) if nomes_produtos else None
+
+    if vNF_el is not None and vNF_el.text:
+        valor_pago = float(vNF_el.text)
+    else:
+        valor_pago = sum(
+            float(p.find("nfe:vProd", NS).text)
+            for p in produtos
+            if p.find("nfe:vProd", NS) is not None and p.find("nfe:vProd", NS).text
+        ) or None
 
     infCpl = infCpl_el.text if infCpl_el is not None and infCpl_el.text else ""
 
@@ -107,9 +130,9 @@ def extrair_dados_nfe(caminho_xml):
         "data_emissao": ide.find("nfe:dhEmi", NS).text if ide is not None and ide.find("nfe:dhEmi", NS) is not None else None,
         "posto": emit.find("nfe:xNome", NS).text if emit is not None and emit.find("nfe:xNome", NS) is not None else None,
         "empresa": dest.find("nfe:xNome", NS).text if dest is not None and dest.find("nfe:xNome", NS) is not None else None,
-        "combustivel": prod.find("nfe:xProd", NS).text if prod is not None and prod.find("nfe:xProd", NS) is not None else None,
-        "litros": float(prod.find("nfe:qCom", NS).text) if prod is not None and prod.find("nfe:qCom", NS) is not None else None,
-        "valor_total": float(prod.find("nfe:vProd", NS).text) if prod is not None and prod.find("nfe:vProd", NS) is not None else None,
+        "combustivel": combustivel_nome,
+        "litros": litros_total if litros_total else None,
+        "valor_total": valor_pago,
         "tipo_veiculo": extrair_campo("tipo_veiculo", infCpl),
         "placa": extrair_campo("placa", infCpl),
         "motorista": extrair_campo("motorista", infCpl),
