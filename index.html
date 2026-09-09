@@ -8,19 +8,19 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --asfalto: #1c1f24;
-    --asfalto-2: #262a31;
-    --linha: #3a3f47;
-    --texto: #e8e6df;
-    --texto-fraco: #9aa0a8;
-    --diesel: #e8a13a;
-    --diesel-2: #f2c069;
-    --ok: #6fbf8b;
+    --fundo: #f5f6f8;
+    --painel: #ffffff;
+    --linha: #e0e3e8;
+    --texto: #1c1f24;
+    --texto-fraco: #6b7280;
+    --diesel: #d9840f;
+    --diesel-2: #b56b0a;
+    --ok: #2f9e5f;
   }
   *{ box-sizing: border-box; }
   body{
     margin:0;
-    background: var(--asfalto);
+    background: var(--fundo);
     color: var(--texto);
     font-family: 'Consolas', 'SF Mono', 'Courier New', monospace;
     line-height: 1.5;
@@ -28,29 +28,30 @@
   header{
     padding: 28px 32px 22px;
     border-bottom: 3px solid var(--diesel);
-    background: repeating-linear-gradient(135deg, var(--asfalto-2) 0 18px, #22262c 18px 36px);
+    background: var(--painel);
   }
   header h1{
     margin:0;
     font-size: 1.6rem;
     letter-spacing: 0.5px;
   }
-  header h1 span{ color: var(--diesel); }
+  header h1 span{ color: var(--diesel-2); }
   header p{ margin: 6px 0 0; color: var(--texto-fraco); font-size: 0.85rem; }
 
   main{ max-width: 1180px; margin: 0 auto; padding: 24px 24px 60px; }
 
   .painel{
-    background: var(--asfalto-2);
+    background: var(--painel);
     border: 1px solid var(--linha);
     border-radius: 4px;
     padding: 18px 20px;
     margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
   }
   .filtros{ display:flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; }
   .filtro label{ display:block; font-size: 0.72rem; color: var(--texto-fraco); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
   select, .placa-chip{
-    background: var(--asfalto);
+    background: var(--painel);
     color: var(--texto);
     border: 1px solid var(--linha);
     border-radius: 3px;
@@ -60,10 +61,10 @@
   }
   .placas-lista{ display:flex; flex-wrap: wrap; gap: 8px; max-width: 520px; }
   .placa-chip{ cursor:pointer; user-select:none; border-color: var(--linha); }
-  .placa-chip.ativo{ border-color: var(--diesel); color: var(--diesel-2); background:#33291a; }
+  .placa-chip.ativo{ border-color: var(--diesel); color: var(--diesel-2); background:#fdf1e0; }
 
   .metricas{ display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; margin-bottom: 20px; }
-  .metrica{ background: var(--asfalto-2); border: 1px solid var(--linha); border-left: 4px solid var(--diesel); border-radius: 4px; padding: 14px 16px; }
+  .metrica{ background: var(--painel); border: 1px solid var(--linha); border-left: 4px solid var(--diesel); border-radius: 4px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
   .metrica .valor{ font-size: 1.6rem; font-weight: bold; color: var(--diesel-2); }
   .metrica .rotulo{ font-size: 0.72rem; color: var(--texto-fraco); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
 
@@ -73,10 +74,10 @@
   table{ width:100%; border-collapse: collapse; font-size: 0.82rem; }
   th, td{ text-align:left; padding: 8px 10px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
   th{ color: var(--texto-fraco); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
-  tbody tr:hover{ background: #2c313a; }
+  tbody tr:hover{ background: #f7f8fa; }
   .sem-dado{ color: var(--texto-fraco); text-align:center; padding: 40px; }
   .tabela-scroll{ overflow-x:auto; }
-  .aviso{ background:#3a2a1a; border:1px solid var(--diesel); color: var(--diesel-2); padding:10px 14px; border-radius:4px; font-size:0.82rem; margin-bottom:20px; }
+  .aviso{ background:#fdf1e0; border:1px solid var(--diesel); color: var(--diesel-2); padding:10px 14px; border-radius:4px; font-size:0.82rem; margin-bottom:20px; }
 </style>
 </head>
 <body>
@@ -232,10 +233,10 @@ function atualizar(){
 
   const opcoesComuns = {
     responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ labels:{ color:'#e8e6df' } } },
+    plugins:{ legend:{ labels:{ color:'#1c1f24' } } },
     scales:{
-      x:{ ticks:{ color:'#9aa0a8' }, grid:{ color:'#3a3f47' } },
-      y:{ ticks:{ color:'#9aa0a8' }, grid:{ color:'#3a3f47' } }
+      x:{ ticks:{ color:'#6b7280' }, grid:{ color:'#e0e3e8' } },
+      y:{ ticks:{ color:'#6b7280' }, grid:{ color:'#e0e3e8' } }
     }
   };
 
