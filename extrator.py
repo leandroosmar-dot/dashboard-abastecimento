@@ -153,7 +153,7 @@ def extrair_dados_nfe(caminho_xml):
         "litros": litros_total if litros_total else None,
         "valor_total": valor_pago,
         "tipo_veiculo": extrair_campo("tipo_veiculo", infCpl),
-        "placa": extrair_campo("placa", infCpl),
+        "placa": re.sub(r"[\s\-]", "", extrair_campo("placa", infCpl)).upper() if extrair_campo("placa", infCpl) else None,
         "motorista": extrair_campo("motorista", infCpl),
         "km_anterior": km_anterior,
         "km_atual": km_atual,
