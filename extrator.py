@@ -46,6 +46,7 @@ PADROES = {
         # (funciona tanto para "MOTORISTA: JAIR | ..." quanto para
         # "Motorista: ANTONIO - KM...")
         r"Motorista:\s*([A-ZÀ-Ú]+(?:\s[A-ZÀ-Ú]+){0,3})",
+        r"MOT\s*[/.]?\s*OBS\s*:\s*([A-ZÀ-Ú]+(?:\s[A-ZÀ-Ú]+){0,3})",
         r"Cond(?:utor)?[.:]?\s*([A-ZÀ-Ú]+(?:\s[A-ZÀ-Ú]+){0,3})",
     ],
     "km_anterior": [
@@ -90,6 +91,11 @@ def extrair_dados_nfe(caminho_xml):
     infCpl_el = root.find(".//nfe:infAdic/nfe:infCpl", NS)
     chave_el = root.find(".//nfe:infProt/nfe:chNFe", NS)
     vNF_el = root.find(".//nfe:total/nfe:ICMSTot/nfe:vNF", NS)
+    # Alguns postos emitem duas notas pra mesma venda: um cupom fiscal
+    # original e depois um "resumo" que referencia o cupom original via
+    # NFref. Isso duplicaria o abastecimento se n\u00e3o filtrarmos.
+    nfref_el = root.find(".//nfe:ide/nfe:NFref/nfe:refNFe", NS)
+    eh_resumo_duplicado = nfref_el is not None and nfref_el.text
 
     litros_total = 0.0
     nomes_produtos = []
@@ -159,5 +165,6 @@ def extrair_dados_nfe(caminho_xml):
         "km_atual": km_atual,
         "km_rodado": km_rodado,
         "media_km_l": media,
+        "duplicado": bool(eh_resumo_duplicado),
     }
     return dados

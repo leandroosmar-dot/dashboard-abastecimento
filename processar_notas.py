@@ -39,6 +39,14 @@ def processar():
 
     df = pd.DataFrame(linhas)
 
+    # Remove notas que sao apenas "resumo" duplicado de outra ja presente
+    duplicadas = df[df.get("duplicado", False) == True]
+    if len(duplicadas) > 0:
+        print(f"\n{len(duplicadas)} nota(s) ignorada(s) por serem resumo duplicado de outra nota:")
+        for a in duplicadas["arquivo"]:
+            print(f"  - {a}")
+    df = df[df.get("duplicado", False) != True].drop(columns=["duplicado"], errors="ignore")
+
     # Converte a data para tipo data de verdade e cria colunas dia/mes/ano
     df["data_emissao"] = pd.to_datetime(df["data_emissao"], errors="coerce", utc=True)
     df["ano"] = df["data_emissao"].dt.year
