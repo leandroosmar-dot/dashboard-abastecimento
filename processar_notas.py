@@ -47,6 +47,16 @@ def processar():
             print(f"  - {a}")
     df = df[df.get("duplicado", False) != True].drop(columns=["duplicado"], errors="ignore")
 
+    # Remove notas sem nenhum litro de combustivel de verdade (ex: compra
+    # de pecas, acessorios, ou servico de manutencao vinculado por engano
+    # ao mesmo lote de notas) - essas nao sao abastecimentos.
+    sem_litros = df[df["litros"].isna() | (df["litros"] == 0)]
+    if len(sem_litros) > 0:
+        print(f"\n{len(sem_litros)} nota(s) ignorada(s) por nao terem litros de combustivel (compra de pecas/servico):")
+        for a in sem_litros["arquivo"]:
+            print(f"  - {a}")
+    df = df[~(df["litros"].isna() | (df["litros"] == 0))]
+
     # Converte a data para tipo data de verdade e cria colunas dia/mes/ano
     df["data_emissao"] = pd.to_datetime(df["data_emissao"], errors="coerce", utc=True)
     df["ano"] = df["data_emissao"].dt.year

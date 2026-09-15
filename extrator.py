@@ -82,6 +82,17 @@ def extrair_dados_nfe(caminho_xml):
     tree = ET.parse(caminho_xml)
     root = tree.getroot()
 
+    # Alguns e-mails trazem outros tipos de documento fiscal (ex: NFSe -
+    # nota fiscal de SERVICO, como manutencao mecanica), que nao tem nada
+    # a ver com abastecimento. Detectamos pela raiz/namespace do XML e
+    # pulamos esses arquivos.
+    tag_raiz = root.tag.split("}")[-1] if "}" in root.tag else root.tag
+    if tag_raiz not in ("nfeProc", "NFe"):
+        raise ValueError(
+            f"Arquivo nao e uma NFe de produto (raiz: {tag_raiz}, provavelmente "
+            "nota de servico ou outro tipo) - ignorado."
+        )
+
     ide = root.find(".//nfe:ide", NS)
     emit = root.find(".//nfe:emit", NS)
     dest = root.find(".//nfe:dest", NS)
