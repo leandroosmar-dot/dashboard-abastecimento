@@ -15,6 +15,10 @@ from extrator import extrair_dados_nfe
 PASTA_XML = "notas_xml"
 ARQUIVO_SAIDA = "base_abastecimentos.csv"
 
+# Placas que devem ser sempre ignoradas (ex: veiculos que saíram da frota).
+# Qualquer nota nova dessas placas e descartada automaticamente.
+PLACAS_EXCLUIDAS = {"HWP5C65", "FRP3J31", "LXV8E52", "HBN8A85"}
+
 
 def processar():
     arquivos = glob.glob(os.path.join(PASTA_XML, "*.xml"))
@@ -56,6 +60,9 @@ def processar():
         for a in sem_litros["arquivo"]:
             print(f"  - {a}")
     df = df[~(df["litros"].isna() | (df["litros"] == 0))]
+
+    # Remove placas que foram marcadas para serem sempre ignoradas.
+    df = df[~df["placa"].isin(PLACAS_EXCLUIDAS)]
 
     # Converte a data para tipo data de verdade e cria colunas dia/mes/ano
     df["data_emissao"] = pd.to_datetime(df["data_emissao"], errors="coerce", utc=True)
