@@ -2,9 +2,6 @@
 processar_notas.py
 Varre a pasta de XMLs baixados (notas_xml/), extrai os dados de cada nota
 usando o extrator.py, e salva tudo consolidado em base_abastecimentos.csv.
-
-Rode este script depois de ler_emails_nfe.py, sempre que quiser atualizar
-os dados do dashboard.
 """
 
 import os
@@ -15,15 +12,13 @@ from extrator import extrair_dados_nfe
 PASTA_XML = "notas_xml"
 ARQUIVO_SAIDA = "base_abastecimentos.csv"
 
-# Placas que devem ser sempre ignoradas (ex: veiculos que saíram da frota).
-# Qualquer nota nova dessas placas e descartada automaticamente.
 PLACAS_EXCLUIDAS = {"HWP5C65", "FRP3J31", "LXV8E52", "HBN8A85"}
 
 
 def processar():
     arquivos = glob.glob(os.path.join(PASTA_XML, "*.xml"))
     if not arquivos:
-        print(f"Nenhum XML encontrado em ./{PASTA_XML}. Rode ler_emails_nfe.py primeiro.")
+        print(f"Nenhum XML encontrado em ./{PASTA_XML}.")
         return
 
     print(f"Processando {len(arquivos)} arquivo(s) XML...")
@@ -43,7 +38,17 @@ def processar():
 
     df = pd.DataFrame(linhas)
 
-    # Remove notas que sao apenas "resumo" duplicado de outra ja presente
+    # IMPORTANTE: format="mixed" evita que o pandas "trave" num unico
+    # formato de data inferido da primeira linha e descarte (NaT) linhas
+    # com formato ligeiramente diferente (ex: "T" vs espaco separando
+    # data e hora), o que zerava a data de notas novas silenciosamente.
+    df["data_emissao"] = pd.to_datetime(df["data_emissao"], errors="coerce", utc=True, format="mixed")
+    df["ano"] = df["data_emissao"].dt.year
+    df["mes"] = df["data_emissao"].dt.month
+    df["dia"] = df["data_emissao"].dt.date
+
+    df = df.drop_duplicates(subset=["arquivo"])
+
     duplicadas = df[df.get("duplicado", False) == True]
     if len(duplicadas) > 0:
         print(f"\n{len(duplicadas)} nota(s) ignorada(s) por serem resumo duplicado de outra nota:")
@@ -51,33 +56,15 @@ def processar():
             print(f"  - {a}")
     df = df[df.get("duplicado", False) != True].drop(columns=["duplicado"], errors="ignore")
 
-    # Remove notas sem nenhum litro de combustivel de verdade (ex: compra
-    # de pecas, acessorios, ou servico de manutencao vinculado por engano
-    # ao mesmo lote de notas) - essas nao sao abastecimentos.
     sem_litros = df[df["litros"].isna() | (df["litros"] == 0)]
     if len(sem_litros) > 0:
-        print(f"\n{len(sem_litros)} nota(s) ignorada(s) por nao terem litros de combustivel (compra de pecas/servico):")
+        print(f"\n{len(sem_litros)} nota(s) ignorada(s) por nao terem litros de combustivel:")
         for a in sem_litros["arquivo"]:
             print(f"  - {a}")
     df = df[~(df["litros"].isna() | (df["litros"] == 0))]
 
-    # Remove placas que foram marcadas para serem sempre ignoradas.
     df = df[~df["placa"].isin(PLACAS_EXCLUIDAS)]
 
-    # Converte a data para tipo data de verdade e cria colunas dia/mes/ano
-    df["data_emissao"] = pd.to_datetime(df["data_emissao"], errors="coerce", utc=True)
-    df["ano"] = df["data_emissao"].dt.year
-    df["mes"] = df["data_emissao"].dt.month
-    df["dia"] = df["data_emissao"].dt.date
-
-    # Remove duplicatas (caso o mesmo XML seja processado mais de uma vez)
-    df = df.drop_duplicates(subset=["arquivo"])
-
-    # --- Recalcula km_rodado e media a partir do historico de cada placa ---
-    # Em vez de confiar no "km anterior" / "media" que cada posto escreve (e
-    # que muitos nem informam), calculamos comparando com o abastecimento
-    # anterior da MESMA placa nesta nossa propria base. Isso funciona igual
-    # para qualquer posto, independente do formato de texto dele.
     df = df.sort_values(["placa", "data_emissao"]).reset_index(drop=True)
 
     km_rodado_calc = []
@@ -91,8 +78,6 @@ def processar():
             if km_atual is not None and pd.notna(km_atual) and km_anterior_calc is not None:
                 rodado = km_atual - km_anterior_calc
             elif pd.notna(df.at[idx, "km_anterior"]) and km_atual is not None and pd.notna(km_atual):
-                # Primeiro abastecimento dessa placa na nossa base: usa o
-                # "km anterior" do proprio posto, se ele informou.
                 rodado = km_atual - df.at[idx, "km_anterior"]
             else:
                 rodado = None
@@ -114,12 +99,9 @@ def processar():
     df.to_csv(ARQUIVO_SAIDA, index=False)
     print(f"Base salva em {ARQUIVO_SAIDA} — {len(df)} nota(s), {erros} erro(s).")
 
-    # Aviso sobre notas sem placa/km reconhecidos, para você revisar o padrão
     sem_placa = df[df["placa"].isna()]
     if len(sem_placa) > 0:
-        print(f"\nAtenção: {len(sem_placa)} nota(s) sem placa identificada. Arquivos:")
-        for a in sem_placa["arquivo"]:
-            print(f"  - {a}")
+        print(f"\nAtencao: {len(sem_placa)} nota(s) sem placa identificada.")
 
 
 if __name__ == "__main__":
