@@ -59,6 +59,22 @@
     box-shadow: 0 1px 2px rgba(0,0,0,0.04);
   }
   .placas-lista{ display:flex; flex-wrap: wrap; gap: 8px; }
+
+  .layout-dashboard{ display:flex; gap: 20px; align-items:flex-start; }
+  .coluna-placas{ width: 200px; flex-shrink: 0; position: sticky; top: 20px; }
+  .coluna-principal{ flex:1; min-width:0; }
+  .placas-lista-vertical{ display:flex; flex-direction:column; gap: 6px; }
+  .placa-item{
+    display:flex; align-items:center; gap: 8px; cursor:pointer; user-select:none;
+    padding: 6px 8px; border-radius: 3px; font-size: 0.86rem;
+  }
+  .placa-item:hover{ background: #f7f8fa; }
+  .placa-item input[type=checkbox]{ accent-color: var(--diesel); cursor:pointer; }
+  @media (max-width: 760px){
+    .layout-dashboard{ flex-direction: column; }
+    .coluna-placas{ width: 100%; position: static; }
+    .placas-lista-vertical{ flex-direction: row; flex-wrap: wrap; }
+  }
   .placa-chip{
     cursor:pointer; user-select:none; border: 1px solid var(--linha);
     border-radius: 3px; padding: 7px 10px; font-size: 0.88rem;
@@ -108,37 +124,44 @@
   </div>
 
   <!-- ABA: Mês / Ano (mesmo conteudo, so muda o agrupamento) -->
-  <div id="conteudo-dashboard">
-    <div class="painel">
-      <h2 id="titulo-periodos">Selecionar mês</h2>
-      <div class="placas-lista" id="periodos-lista"></div>
+  <div id="conteudo-dashboard" class="layout-dashboard">
+    <div class="painel coluna-placas">
+      <h2>Placas</h2>
+      <div class="placas-lista-vertical" id="placas-lista-vertical"></div>
     </div>
 
-    <div class="metricas" id="metricas"></div>
+    <div class="coluna-principal">
+      <div class="painel">
+        <h2 id="titulo-periodos">Selecionar mês</h2>
+        <div class="placas-lista" id="periodos-lista"></div>
+      </div>
 
-    <div class="painel">
-      <h2>Km rodado por placa</h2>
-      <div class="grafico-box"><canvas id="grafico-km"></canvas></div>
-    </div>
+      <div class="metricas" id="metricas"></div>
 
-    <div class="painel">
-      <h2>Média de consumo (km/l) por placa</h2>
-      <div class="grafico-box"><canvas id="grafico-media"></canvas></div>
-    </div>
+      <div class="painel">
+        <h2>Km rodado por placa</h2>
+        <div class="grafico-box"><canvas id="grafico-km"></canvas></div>
+      </div>
 
-    <div class="painel">
-      <h2>Notas detalhadas</h2>
-      <div class="tabela-scroll">
-        <table id="tabela">
-          <thead>
-            <tr>
-              <th>Data</th><th>Placa</th><th>Motorista</th><th>Posto</th>
-              <th>Combustível</th><th>Litros</th><th>Valor</th><th>Km atual</th>
-              <th>Km rodado</th><th>Média</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div class="painel">
+        <h2>Média de consumo (km/l) por placa</h2>
+        <div class="grafico-box"><canvas id="grafico-media"></canvas></div>
+      </div>
+
+      <div class="painel">
+        <h2>Notas detalhadas</h2>
+        <div class="tabela-scroll">
+          <table id="tabela">
+            <thead>
+              <tr>
+                <th>Data</th><th>Placa</th><th>Motorista</th><th>Posto</th>
+                <th>Combustível</th><th>Litros</th><th>Valor</th><th>Km atual</th>
+                <th>Km rodado</th><th>Média</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -197,28 +220,49 @@ function periodoDaLinha(linha, tipo){
   return String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
 }
 
+function alternarPlaca(p){
+  if(placasAtivas.has(p)) placasAtivas.delete(p);
+  else placasAtivas.add(p);
+  sincronizarSeletoresPlacas();
+  atualizar();
+  if(document.getElementById('conteudo-placas').style.display !== 'none') atualizarResumoPlacas();
+}
+
 function montarFiltroPlacas(){
-  const cont = document.getElementById('placas-lista');
   const placas = [...new Set(dados.map(d=>d.placa).filter(Boolean))].sort();
   placasAtivas = new Set(placas);
+
+  // Chips horizontais (aba Placas)
+  const cont = document.getElementById('placas-lista');
   cont.innerHTML = '';
   placas.forEach(p=>{
     const chip = document.createElement('div');
     chip.className = 'placa-chip ativo';
     chip.textContent = p;
     chip.dataset.placa = p;
-    chip.onclick = () => {
-      if(placasAtivas.has(p)){ placasAtivas.delete(p); chip.classList.remove('ativo'); }
-      else { placasAtivas.add(p); chip.classList.add('ativo'); }
-      atualizar();
-    };
+    chip.onclick = () => alternarPlaca(p);
     cont.appendChild(chip);
+  });
+
+  // Lista vertical (abas Mes/Ano), de cima para baixo
+  const contV = document.getElementById('placas-lista-vertical');
+  contV.innerHTML = '';
+  placas.forEach(p=>{
+    const item = document.createElement('label');
+    item.className = 'placa-item';
+    item.dataset.placa = p;
+    item.innerHTML = `<input type="checkbox" checked> ${p}`;
+    item.querySelector('input').addEventListener('change', ()=> alternarPlaca(p));
+    contV.appendChild(item);
   });
 }
 
-function sincronizarChipsPlacas(){
+function sincronizarSeletoresPlacas(){
   document.querySelectorAll('#placas-lista .placa-chip').forEach(chip=>{
     chip.classList.toggle('ativo', placasAtivas.has(chip.dataset.placa));
+  });
+  document.querySelectorAll('#placas-lista-vertical .placa-item').forEach(item=>{
+    item.querySelector('input').checked = placasAtivas.has(item.dataset.placa);
   });
 }
 
@@ -294,7 +338,7 @@ function atualizarResumoPlacas(){
   document.querySelectorAll('.placa-nome-link').forEach(el=>{
     el.onclick = () => {
       placasAtivas = new Set([el.dataset.placa]);
-      sincronizarChipsPlacas();
+      sincronizarSeletoresPlacas();
       trocarAba('mes');
     };
   });
@@ -405,12 +449,12 @@ document.querySelectorAll('.aba-botao').forEach(b=>{
 });
 document.getElementById('btn-todas').addEventListener('click', ()=>{
   placasAtivas = new Set(dados.map(d=>d.placa).filter(Boolean));
-  sincronizarChipsPlacas();
+  sincronizarSeletoresPlacas();
   atualizarResumoPlacas();
 });
 document.getElementById('btn-nenhuma').addEventListener('click', ()=>{
   placasAtivas = new Set();
-  sincronizarChipsPlacas();
+  sincronizarSeletoresPlacas();
   atualizarResumoPlacas();
 });
 
