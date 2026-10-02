@@ -8,188 +8,138 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
   :root{
-    --fundo: #f5f6f8;
+    --fundo: #ffffff;
     --painel: #ffffff;
-    --linha: #e0e3e8;
-    --texto: #1c1f24;
+    --linha: #e3e5e8;
+    --texto: #111318;
     --texto-fraco: #6b7280;
     --diesel: #d9840f;
     --diesel-2: #b56b0a;
-    --ok: #2f9e5f;
   }
   *{ box-sizing: border-box; }
   body{
     margin:0;
     background: var(--fundo);
     color: var(--texto);
-    font-family: 'Consolas', 'SF Mono', 'Courier New', monospace;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
     line-height: 1.5;
   }
-  header{
-    padding: 28px 32px 22px;
-    border-bottom: 3px solid var(--diesel);
-    background: var(--painel);
-  }
-  header h1{
-    margin:0;
-    font-size: 1.6rem;
-    letter-spacing: 0.5px;
-  }
-  header h1 span{ color: var(--diesel-2); }
-  header p{ margin: 6px 0 0; color: var(--texto-fraco); font-size: 0.85rem; }
+  main{ max-width: 1280px; margin: 0 auto; padding: 28px 32px 60px; }
 
-  main{ max-width: 1180px; margin: 0 auto; padding: 24px 24px 60px; }
-
-  .abas{ display:flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--linha); }
-  .aba-botao{
-    background: none; border: none; cursor: pointer;
-    padding: 10px 20px; font-family: inherit; font-size: 0.88rem;
-    color: var(--texto-fraco); border-bottom: 3px solid transparent;
-    margin-bottom: -1px;
+  header{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 18px; }
+  header h1{ margin:0; font-size: 2rem; font-weight: 800; }
+  header p{ margin: 4px 0 0; color: var(--texto-fraco); font-size: 0.92rem; }
+  .btn-imprimir{
+    background:#fff; border:1px solid var(--linha); border-radius: 6px;
+    padding: 9px 18px; font-size: 0.88rem; cursor:pointer; color: var(--texto);
   }
-  .aba-botao:hover{ color: var(--texto); }
-  .aba-botao.ativa{ color: var(--diesel-2); border-bottom-color: var(--diesel); font-weight: bold; }
+  .btn-imprimir:hover{ background:#f7f8fa; }
+
+  hr{ border:none; border-top: 2px solid var(--texto); margin: 18px 0 22px; }
+
+  .filtros{
+    display:flex; flex-wrap: wrap; gap: 24px; align-items:flex-end; margin-bottom: 24px;
+  }
+  .filtro{ min-width: 150px; }
+  .filtro label{ display:block; font-size: 0.82rem; color: var(--texto-fraco); margin-bottom: 6px; }
+  .filtro input, .filtro select{
+    width:100%; padding: 9px 10px; border: 1px solid var(--linha); border-radius: 6px;
+    font-size: 0.9rem; font-family: inherit; color: var(--texto); background:#fff;
+  }
+  .filtro input:focus, .filtro select:focus{ outline: 2px solid var(--diesel); outline-offset: 1px; }
 
   .painel{
     background: var(--painel);
     border: 1px solid var(--linha);
-    border-radius: 4px;
-    padding: 18px 20px;
+    border-radius: 8px;
+    padding: 20px 22px;
     margin-bottom: 20px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  }
-  .placas-lista{ display:flex; flex-wrap: wrap; gap: 8px; }
-
-  .layout-dashboard{ display:flex; gap: 20px; align-items:flex-start; }
-  .coluna-placas{ width: 200px; flex-shrink: 0; position: sticky; top: 20px; }
-  .coluna-principal{ flex:1; min-width:0; }
-  .placas-lista-vertical{ display:flex; flex-direction:column; gap: 6px; }
-  .placa-item{
-    display:flex; align-items:center; gap: 8px; cursor:pointer; user-select:none;
-    padding: 6px 8px; border-radius: 3px; font-size: 0.86rem;
-  }
-  .placa-item:hover{ background: #f7f8fa; }
-  .placa-item input[type=checkbox]{ accent-color: var(--diesel); cursor:pointer; }
-  @media (max-width: 760px){
-    .layout-dashboard{ flex-direction: column; }
-    .coluna-placas{ width: 100%; position: static; }
-    .placas-lista-vertical{ flex-direction: row; flex-wrap: wrap; }
-  }
-  .placa-chip{
-    cursor:pointer; user-select:none; border: 1px solid var(--linha);
-    border-radius: 3px; padding: 7px 10px; font-size: 0.88rem;
-    background: var(--painel); color: var(--texto);
-  }
-  .placa-chip.ativo{ border-color: var(--diesel); color: var(--diesel-2); background:#fdf1e0; }
-  .placas-acoes{ margin-top: 12px; display:flex; gap: 10px; }
-  .botao-link{
-    background:none; border:none; color: var(--diesel-2); cursor:pointer;
-    font-family: inherit; font-size: 0.8rem; text-decoration: underline; padding:0;
   }
 
-  .metricas{ display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; margin-bottom: 20px; }
-  .metrica{ background: var(--painel); border: 1px solid var(--linha); border-left: 4px solid var(--diesel); border-radius: 4px; padding: 14px 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
-  .metrica .valor{ font-size: 1.6rem; font-weight: bold; color: var(--diesel-2); }
-  .metrica .rotulo{ font-size: 0.72rem; color: var(--texto-fraco); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .metricas{ display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; margin-bottom: 22px; }
+  .metrica{ border: 1px solid var(--linha); border-left: 4px solid var(--diesel); border-radius: 8px; padding: 14px 16px; }
+  .metrica .valor{ font-size: 1.6rem; font-weight: 800; color: var(--diesel-2); }
+  .metrica .rotulo{ font-size: 0.78rem; color: var(--texto-fraco); margin-top: 4px; }
 
   .grafico-box{ position: relative; height: 320px; }
-  h2{ font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; color: var(--texto-fraco); margin: 0 0 16px; }
+  h2{ font-size: 1rem; font-weight: 700; margin: 0 0 16px; }
 
-  table{ width:100%; border-collapse: collapse; font-size: 0.82rem; }
-  th, td{ text-align:left; padding: 8px 10px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
-  th{ color: var(--texto-fraco); text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; }
+  table{ width:100%; border-collapse: collapse; font-size: 0.86rem; }
+  th, td{ text-align:left; padding: 9px 10px; border-bottom: 1px solid var(--linha); white-space: nowrap; }
+  th{ color: var(--texto-fraco); font-weight: 600; font-size: 0.78rem; }
   tbody tr:hover{ background: #f7f8fa; }
-  .sem-dado{ color: var(--texto-fraco); text-align:center; padding: 40px; }
   .tabela-scroll{ overflow-x:auto; }
-  .aviso{ background:#fdf1e0; border:1px solid var(--diesel); color: var(--diesel-2); padding:10px 14px; border-radius:4px; font-size:0.82rem; margin-bottom:20px; }
-  .placa-nome-link{ cursor:pointer; color: var(--diesel-2); text-decoration: underline; }
+  .aviso{ background:#fdf1e0; border:1px solid var(--diesel); color: var(--diesel-2); padding:10px 14px; border-radius:8px; font-size:0.86rem; margin-bottom:20px; }
+
+  @media print{
+    .btn-imprimir, .filtros{ display:none; }
+  }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Abastecimento <span>/ Frota</span></h1>
-  <p>Km rodado e consumo por placa — dados extraídos automaticamente das notas fiscais de abastecimento</p>
-</header>
-
 <main>
-  <div class="abas">
-    <button class="aba-botao ativa" data-aba="mes">Mês</button>
-    <button class="aba-botao" data-aba="ano">Ano</button>
-    <button class="aba-botao" data-aba="placas">Placas</button>
+  <header>
+    <div>
+      <h1>Abastecimento da frota</h1>
+      <p id="subtitulo">PortoExpress Logística — carregando dados…</p>
+    </div>
+    <button class="btn-imprimir" onclick="window.print()">Imprimir</button>
+  </header>
+  <hr>
+
+  <div class="filtros">
+    <div class="filtro">
+      <label>De</label>
+      <input type="date" id="filtro-de">
+    </div>
+    <div class="filtro">
+      <label>Até</label>
+      <input type="date" id="filtro-ate">
+    </div>
+    <div class="filtro">
+      <label>Placa</label>
+      <select id="filtro-placa"><option value="">Todas</option></select>
+    </div>
+    <div class="filtro">
+      <label>Posto</label>
+      <select id="filtro-posto"><option value="">Todos</option></select>
+    </div>
+    <div class="filtro">
+      <label>Motorista</label>
+      <select id="filtro-motorista"><option value="">Todos</option></select>
+    </div>
   </div>
 
   <div id="aviso-vazio" class="aviso" style="display:none">
-    Nenhum dado encontrado em <code>base_abastecimentos.csv</code>. Rode <code>processar_notas.py</code> e suba o CSV atualizado no repositório.
+    Nenhum dado encontrado em <code>base_abastecimentos.csv</code>.
   </div>
 
-  <!-- ABA: Mês / Ano (mesmo conteudo, so muda o agrupamento) -->
-  <div id="conteudo-dashboard" class="layout-dashboard">
-    <div class="painel coluna-placas">
-      <h2>Placas</h2>
-      <div class="placas-lista-vertical" id="placas-lista-vertical"></div>
-    </div>
+  <div class="metricas" id="metricas"></div>
 
-    <div class="coluna-principal">
-      <div class="painel">
-        <h2 id="titulo-periodos">Selecionar mês</h2>
-        <div class="placas-lista" id="periodos-lista"></div>
-      </div>
-
-      <div class="metricas" id="metricas"></div>
-
-      <div class="painel">
-        <h2>Km rodado por placa</h2>
-        <div class="grafico-box"><canvas id="grafico-km"></canvas></div>
-      </div>
-
-      <div class="painel">
-        <h2>Média de consumo (km/l) por placa</h2>
-        <div class="grafico-box"><canvas id="grafico-media"></canvas></div>
-      </div>
-
-      <div class="painel">
-        <h2>Notas detalhadas</h2>
-        <div class="tabela-scroll">
-          <table id="tabela">
-            <thead>
-              <tr>
-                <th>Data</th><th>Placa</th><th>Motorista</th><th>Posto</th>
-                <th>Combustível</th><th>Litros</th><th>Valor</th><th>Km atual</th>
-                <th>Km rodado</th><th>Média</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+  <div class="painel">
+    <h2>Km rodado por placa (por mês)</h2>
+    <div class="grafico-box"><canvas id="grafico-km"></canvas></div>
   </div>
 
-  <!-- ABA: Placas -->
-  <div id="conteudo-placas" style="display:none">
-    <div class="painel">
-      <h2>Selecionar placas</h2>
-      <div class="placas-lista" id="placas-lista"></div>
-      <div class="placas-acoes">
-        <button class="botao-link" id="btn-todas">Marcar todas</button>
-        <button class="botao-link" id="btn-nenhuma">Desmarcar todas</button>
-      </div>
-    </div>
+  <div class="painel">
+    <h2>Média de consumo (km/l) por placa (por mês)</h2>
+    <div class="grafico-box"><canvas id="grafico-media"></canvas></div>
+  </div>
 
-    <div class="painel">
-      <h2>Resumo por placa</h2>
-      <div class="tabela-scroll">
-        <table id="tabela-placas">
-          <thead>
-            <tr>
-              <th>Placa</th><th>Abastecimentos</th><th>Km rodado total</th>
-              <th>Litros totais</th><th>Média geral (km/l)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+  <div class="painel">
+    <h2>Notas detalhadas</h2>
+    <div class="tabela-scroll">
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th>Data</th><th>Placa</th><th>Motorista</th><th>Posto</th>
+            <th>Combustível</th><th>Litros</th><th>Valor</th><th>Km atual</th>
+            <th>Km rodado</th><th>Média</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
     </div>
   </div>
 </main>
@@ -197,11 +147,7 @@
 <script>
 const CORES = ['#e8a13a','#6fbf8b','#7aa9d9','#d97757','#c98bd9','#e0d15f','#63c9c1'];
 let dados = [];
-let placasAtivas = new Set();
 let chartKm, chartMedia;
-let periodoAtivo = 'mes';
-let abaAtiva = 'mes';
-let periodoSelecionado = null; // null = "Todos" os periodos juntos
 
 function corDaPlaca(placa){
   const lista = [...new Set(dados.map(d=>d.placa))].sort();
@@ -213,175 +159,95 @@ function formatarNumero(n, casas=0){
   return Number(n).toLocaleString('pt-BR', {minimumFractionDigits:casas, maximumFractionDigits:casas});
 }
 
-function periodoDaLinha(linha, tipo){
+function mesDaLinha(linha){
   const d = new Date(linha.data_emissao);
   if(isNaN(d)) return null;
-  if(tipo === 'ano') return String(d.getFullYear());
   return String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
 }
 
-function alternarPlaca(p){
-  if(placasAtivas.has(p)) placasAtivas.delete(p);
-  else placasAtivas.add(p);
-  sincronizarSeletoresPlacas();
-  atualizar();
-  if(document.getElementById('conteudo-placas').style.display !== 'none') atualizarResumoPlacas();
-}
-
-function montarFiltroPlacas(){
+function popularSelects(){
   const placas = [...new Set(dados.map(d=>d.placa).filter(Boolean))].sort();
-  placasAtivas = new Set(placas);
+  const postos = [...new Set(dados.map(d=>d.posto).filter(Boolean))].sort();
+  const motoristas = [...new Set(dados.map(d=>d.motorista).filter(Boolean))].sort();
 
-  // Chips horizontais (aba Placas)
-  const cont = document.getElementById('placas-lista');
-  cont.innerHTML = '';
-  placas.forEach(p=>{
-    const chip = document.createElement('div');
-    chip.className = 'placa-chip ativo';
-    chip.textContent = p;
-    chip.dataset.placa = p;
-    chip.onclick = () => alternarPlaca(p);
-    cont.appendChild(chip);
-  });
+  const selPlaca = document.getElementById('filtro-placa');
+  placas.forEach(p=> selPlaca.appendChild(new Option(p, p)));
 
-  // Lista vertical (abas Mes/Ano), de cima para baixo
-  const contV = document.getElementById('placas-lista-vertical');
-  contV.innerHTML = '';
-  placas.forEach(p=>{
-    const item = document.createElement('label');
-    item.className = 'placa-item';
-    item.dataset.placa = p;
-    item.innerHTML = `<input type="checkbox" checked> ${p}`;
-    item.querySelector('input').addEventListener('change', ()=> alternarPlaca(p));
-    contV.appendChild(item);
-  });
-}
+  const selPosto = document.getElementById('filtro-posto');
+  postos.forEach(p=> selPosto.appendChild(new Option(p, p)));
 
-function sincronizarSeletoresPlacas(){
-  document.querySelectorAll('#placas-lista .placa-chip').forEach(chip=>{
-    chip.classList.toggle('ativo', placasAtivas.has(chip.dataset.placa));
-  });
-  document.querySelectorAll('#placas-lista-vertical .placa-item').forEach(item=>{
-    item.querySelector('input').checked = placasAtivas.has(item.dataset.placa);
-  });
-}
+  const selMotorista = document.getElementById('filtro-motorista');
+  motoristas.forEach(m=> selMotorista.appendChild(new Option(m, m)));
 
-function montarChipsPeriodo(){
-  const titulo = document.getElementById('titulo-periodos');
-  titulo.textContent = periodoAtivo === 'ano' ? 'Selecionar ano' : 'Selecionar mês';
-
-  const cont = document.getElementById('periodos-lista');
-  cont.innerHTML = '';
-
-  // Opcao "Todos" junta todos os periodos (comportamento de antes)
-  const chipTodos = document.createElement('div');
-  chipTodos.className = 'placa-chip' + (periodoSelecionado===null ? ' ativo' : '');
-  chipTodos.textContent = 'Todos';
-  chipTodos.onclick = () => { periodoSelecionado = null; montarChipsPeriodo(); atualizar(); };
-  cont.appendChild(chipTodos);
-
-  const periodos = [...new Set(dados.map(d=>periodoDaLinha(d, periodoAtivo)).filter(Boolean))]
-    .sort((a,b)=>{
-      // ordena cronologicamente (mes: MM/AAAA, ano: AAAA)
-      if(periodoAtivo==='ano') return a.localeCompare(b);
-      const [ma,aa] = a.split('/'); const [mb,ab] = b.split('/');
-      return (aa+ma).localeCompare(ab+mb);
-    });
-
-  periodos.forEach(per=>{
-    const chip = document.createElement('div');
-    chip.className = 'placa-chip' + (periodoSelecionado===per ? ' ativo' : '');
-    chip.textContent = per;
-    chip.onclick = () => { periodoSelecionado = per; montarChipsPeriodo(); atualizar(); };
-    cont.appendChild(chip);
-  });
-}
-
-function trocarAba(aba){
-  abaAtiva = aba;
-  document.querySelectorAll('.aba-botao').forEach(b=> b.classList.toggle('ativa', b.dataset.aba===aba));
-
-  if(aba === 'placas'){
-    document.getElementById('conteudo-dashboard').style.display = 'none';
-    document.getElementById('conteudo-placas').style.display = 'block';
-    atualizarResumoPlacas();
-  } else {
-    periodoAtivo = aba; // 'mes' ou 'ano'
-    periodoSelecionado = null; // reseta ao trocar de mes/ano, pra nao ficar com um periodo que nao existe na outra escala
-    document.getElementById('conteudo-dashboard').style.display = 'block';
-    document.getElementById('conteudo-placas').style.display = 'none';
-    montarChipsPeriodo();
-    atualizar();
+  // Datas De/Ate: preenche com a faixa real dos dados, por padrao
+  const datasValidas = dados.map(d=> new Date(d.data_emissao)).filter(d=>!isNaN(d));
+  if(datasValidas.length){
+    const min = new Date(Math.min(...datasValidas));
+    const max = new Date(Math.max(...datasValidas));
+    document.getElementById('filtro-de').value = min.toISOString().slice(0,10);
+    document.getElementById('filtro-ate').value = max.toISOString().slice(0,10);
+    document.getElementById('subtitulo').textContent =
+      `PortoExpress Logística — dados atualizados em ${max.toLocaleDateString('pt-BR')}`;
   }
 }
 
-function atualizarResumoPlacas(){
-  const tbody = document.querySelector('#tabela-placas tbody');
-  tbody.innerHTML = '';
-  const placas = [...new Set(dados.map(d=>d.placa).filter(Boolean))].sort();
-  placas.forEach(p=>{
-    const linhas = dados.filter(d=>d.placa===p);
-    const totalKm = linhas.reduce((s,d)=> s + (d.km_rodado||0), 0);
-    const totalLitros = linhas.reduce((s,d)=> s + (d.litros||0), 0);
-    const media = totalLitros>0 ? totalKm/totalLitros : null;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span class="placa-nome-link" data-placa="${p}">${p}</span></td>
-      <td>${linhas.length}</td>
-      <td>${formatarNumero(totalKm)}</td>
-      <td>${formatarNumero(totalLitros,1)}</td>
-      <td>${media? formatarNumero(media,2) : '—'}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-  // Clicar no nome da placa na tabela isola so ela (atalho util)
-  document.querySelectorAll('.placa-nome-link').forEach(el=>{
-    el.onclick = () => {
-      placasAtivas = new Set([el.dataset.placa]);
-      sincronizarSeletoresPlacas();
-      trocarAba('mes');
-    };
+function dadosFiltrados(){
+  const de = document.getElementById('filtro-de').value;
+  const ate = document.getElementById('filtro-ate').value;
+  const placa = document.getElementById('filtro-placa').value;
+  const posto = document.getElementById('filtro-posto').value;
+  const motorista = document.getElementById('filtro-motorista').value;
+
+  const deData = de ? new Date(de + 'T00:00:00') : null;
+  const ateData = ate ? new Date(ate + 'T23:59:59') : null;
+
+  return dados.filter(d=>{
+    const data = new Date(d.data_emissao);
+    if(isNaN(data)) return false;
+    if(deData && data < deData) return false;
+    if(ateData && data > ateData) return false;
+    if(placa && d.placa !== placa) return false;
+    if(posto && d.posto !== posto) return false;
+    if(motorista && d.motorista !== motorista) return false;
+    return true;
   });
 }
 
 function atualizar(){
-  const filtrado = dados.filter(d => placasAtivas.has(d.placa));
-  // Metricas e tabela respeitam o periodo escolhido (chip Todos/mes especifico/ano especifico)
-  const filtradoPeriodo = periodoSelecionado===null
-    ? filtrado
-    : filtrado.filter(d => periodoDaLinha(d, periodoAtivo) === periodoSelecionado);
+  const filtrado = dadosFiltrados();
 
-  const totalKm = filtradoPeriodo.reduce((s,d)=> s + (d.km_rodado||0), 0);
-  const totalLitros = filtradoPeriodo.reduce((s,d)=> s + (d.litros||0), 0);
+  const totalKm = filtrado.reduce((s,d)=> s + (d.km_rodado||0), 0);
+  const totalLitros = filtrado.reduce((s,d)=> s + (d.litros||0), 0);
   const mediaGeral = totalLitros>0 ? totalKm/totalLitros : null;
 
   document.getElementById('metricas').innerHTML = `
-    <div class="metrica"><div class="valor">${filtradoPeriodo.length}</div><div class="rotulo">Abastecimentos</div></div>
+    <div class="metrica"><div class="valor">${filtrado.length}</div><div class="rotulo">Abastecimentos</div></div>
     <div class="metrica"><div class="valor">${formatarNumero(totalKm)}</div><div class="rotulo">Km rodado total</div></div>
     <div class="metrica"><div class="valor">${formatarNumero(totalLitros,1)}</div><div class="rotulo">Litros totais</div></div>
     <div class="metrica"><div class="valor">${mediaGeral? formatarNumero(mediaGeral,2) : '—'}</div><div class="rotulo">Média geral (km/l)</div></div>
   `;
 
-  // Os graficos sempre mostram a tendencia de TODOS os periodos (para dar contexto),
-  // independente do chip de periodo selecionado acima.
   const grupos = {};
   filtrado.forEach(d=>{
-    const per = periodoDaLinha(d, periodoAtivo);
-    if(!per) return;
-    const chave = per + '||' + d.placa;
-    if(!grupos[chave]) grupos[chave] = {periodo: per, placa: d.placa, km:0, litros:0};
+    const mes = mesDaLinha(d);
+    if(!mes) return;
+    const chave = mes + '||' + d.placa;
+    if(!grupos[chave]) grupos[chave] = {mes, placa: d.placa, km:0, litros:0};
     grupos[chave].km += (d.km_rodado||0);
     grupos[chave].litros += (d.litros||0);
   });
   const linhasAgrupadas = Object.values(grupos);
-  const periodos = [...new Set(linhasAgrupadas.map(l=>l.periodo))].sort();
-  const placas = [...placasAtivas].sort();
+  const meses = [...new Set(linhasAgrupadas.map(l=>l.mes))].sort((a,b)=>{
+    const [ma,aa]=a.split('/'); const [mb,ab]=b.split('/');
+    return (aa+ma).localeCompare(ab+mb);
+  });
+  const placas = [...new Set(filtrado.map(d=>d.placa).filter(Boolean))].sort();
 
   const datasetsKm = placas.map(p=>({
     label: p,
     backgroundColor: corDaPlaca(p),
-    data: periodos.map(per=>{
-      const item = linhasAgrupadas.find(l=>l.periodo===per && l.placa===p);
+    data: meses.map(mes=>{
+      const item = linhasAgrupadas.find(l=>l.mes===mes && l.placa===p);
       return item ? item.km : 0;
     })
   }));
@@ -391,38 +257,34 @@ function atualizar(){
     borderColor: corDaPlaca(p),
     backgroundColor: corDaPlaca(p),
     tension: 0.25,
-    data: periodos.map(per=>{
-      const item = linhasAgrupadas.find(l=>l.periodo===per && l.placa===p);
+    data: meses.map(mes=>{
+      const item = linhasAgrupadas.find(l=>l.mes===mes && l.placa===p);
       return item && item.litros>0 ? +(item.km/item.litros).toFixed(2) : null;
     })
   }));
 
   const opcoesComuns = {
     responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{ labels:{ color:'#1c1f24' } } },
+    plugins:{ legend:{ labels:{ color:'#111318' } } },
     scales:{
-      x:{ ticks:{ color:'#6b7280' }, grid:{ color:'#e0e3e8' } },
-      y:{ ticks:{ color:'#6b7280' }, grid:{ color:'#e0e3e8' } }
+      x:{ ticks:{ color:'#6b7280' }, grid:{ color:'#e3e5e8' } },
+      y:{ ticks:{ color:'#6b7280' }, grid:{ color:'#e3e5e8' } }
     }
   };
 
   if(chartKm) chartKm.destroy();
   chartKm = new Chart(document.getElementById('grafico-km'), {
-    type:'bar',
-    data:{ labels: periodos, datasets: datasetsKm },
-    options: opcoesComuns
+    type:'bar', data:{ labels: meses, datasets: datasetsKm }, options: opcoesComuns
   });
 
   if(chartMedia) chartMedia.destroy();
   chartMedia = new Chart(document.getElementById('grafico-media'), {
-    type:'line',
-    data:{ labels: periodos, datasets: datasetsMedia },
-    options: opcoesComuns
+    type:'line', data:{ labels: meses, datasets: datasetsMedia }, options: opcoesComuns
   });
 
   const tbody = document.querySelector('#tabela tbody');
   tbody.innerHTML = '';
-  filtradoPeriodo
+  filtrado
     .slice()
     .sort((a,b)=> new Date(b.data_emissao) - new Date(a.data_emissao))
     .forEach(d=>{
@@ -444,18 +306,8 @@ function atualizar(){
     });
 }
 
-document.querySelectorAll('.aba-botao').forEach(b=>{
-  b.addEventListener('click', ()=> trocarAba(b.dataset.aba));
-});
-document.getElementById('btn-todas').addEventListener('click', ()=>{
-  placasAtivas = new Set(dados.map(d=>d.placa).filter(Boolean));
-  sincronizarSeletoresPlacas();
-  atualizarResumoPlacas();
-});
-document.getElementById('btn-nenhuma').addEventListener('click', ()=>{
-  placasAtivas = new Set();
-  sincronizarSeletoresPlacas();
-  atualizarResumoPlacas();
+['filtro-de','filtro-ate','filtro-placa','filtro-posto','filtro-motorista'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', atualizar);
 });
 
 Papa.parse('base_abastecimentos.csv?v=' + Date.now(), {
@@ -469,8 +321,7 @@ Papa.parse('base_abastecimentos.csv?v=' + Date.now(), {
       document.getElementById('aviso-vazio').style.display = 'block';
       return;
     }
-    montarFiltroPlacas();
-    montarChipsPeriodo();
+    popularSelects();
     atualizar();
   },
   error: function(){
