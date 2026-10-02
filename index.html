@@ -109,6 +109,11 @@
 
   <!-- ABA: Mês / Ano (mesmo conteudo, so muda o agrupamento) -->
   <div id="conteudo-dashboard">
+    <div class="painel">
+      <h2 id="titulo-periodos">Selecionar mês</h2>
+      <div class="placas-lista" id="periodos-lista"></div>
+    </div>
+
     <div class="metricas" id="metricas"></div>
 
     <div class="painel">
@@ -173,6 +178,7 @@ let placasAtivas = new Set();
 let chartKm, chartMedia;
 let periodoAtivo = 'mes';
 let abaAtiva = 'mes';
+let periodoSelecionado = null; // null = "Todos" os periodos juntos
 
 function corDaPlaca(placa){
   const lista = [...new Set(dados.map(d=>d.placa))].sort();
@@ -216,6 +222,37 @@ function sincronizarChipsPlacas(){
   });
 }
 
+function montarChipsPeriodo(){
+  const titulo = document.getElementById('titulo-periodos');
+  titulo.textContent = periodoAtivo === 'ano' ? 'Selecionar ano' : 'Selecionar mês';
+
+  const cont = document.getElementById('periodos-lista');
+  cont.innerHTML = '';
+
+  // Opcao "Todos" junta todos os periodos (comportamento de antes)
+  const chipTodos = document.createElement('div');
+  chipTodos.className = 'placa-chip' + (periodoSelecionado===null ? ' ativo' : '');
+  chipTodos.textContent = 'Todos';
+  chipTodos.onclick = () => { periodoSelecionado = null; montarChipsPeriodo(); atualizar(); };
+  cont.appendChild(chipTodos);
+
+  const periodos = [...new Set(dados.map(d=>periodoDaLinha(d, periodoAtivo)).filter(Boolean))]
+    .sort((a,b)=>{
+      // ordena cronologicamente (mes: MM/AAAA, ano: AAAA)
+      if(periodoAtivo==='ano') return a.localeCompare(b);
+      const [ma,aa] = a.split('/'); const [mb,ab] = b.split('/');
+      return (aa+ma).localeCompare(ab+mb);
+    });
+
+  periodos.forEach(per=>{
+    const chip = document.createElement('div');
+    chip.className = 'placa-chip' + (periodoSelecionado===per ? ' ativo' : '');
+    chip.textContent = per;
+    chip.onclick = () => { periodoSelecionado = per; montarChipsPeriodo(); atualizar(); };
+    cont.appendChild(chip);
+  });
+}
+
 function trocarAba(aba){
   abaAtiva = aba;
   document.querySelectorAll('.aba-botao').forEach(b=> b.classList.toggle('ativa', b.dataset.aba===aba));
@@ -226,8 +263,10 @@ function trocarAba(aba){
     atualizarResumoPlacas();
   } else {
     periodoAtivo = aba; // 'mes' ou 'ano'
+    periodoSelecionado = null; // reseta ao trocar de mes/ano, pra nao ficar com um periodo que nao existe na outra escala
     document.getElementById('conteudo-dashboard').style.display = 'block';
     document.getElementById('conteudo-placas').style.display = 'none';
+    montarChipsPeriodo();
     atualizar();
   }
 }
@@ -263,18 +302,24 @@ function atualizarResumoPlacas(){
 
 function atualizar(){
   const filtrado = dados.filter(d => placasAtivas.has(d.placa));
+  // Metricas e tabela respeitam o periodo escolhido (chip Todos/mes especifico/ano especifico)
+  const filtradoPeriodo = periodoSelecionado===null
+    ? filtrado
+    : filtrado.filter(d => periodoDaLinha(d, periodoAtivo) === periodoSelecionado);
 
-  const totalKm = filtrado.reduce((s,d)=> s + (d.km_rodado||0), 0);
-  const totalLitros = filtrado.reduce((s,d)=> s + (d.litros||0), 0);
+  const totalKm = filtradoPeriodo.reduce((s,d)=> s + (d.km_rodado||0), 0);
+  const totalLitros = filtradoPeriodo.reduce((s,d)=> s + (d.litros||0), 0);
   const mediaGeral = totalLitros>0 ? totalKm/totalLitros : null;
 
   document.getElementById('metricas').innerHTML = `
-    <div class="metrica"><div class="valor">${filtrado.length}</div><div class="rotulo">Abastecimentos</div></div>
+    <div class="metrica"><div class="valor">${filtradoPeriodo.length}</div><div class="rotulo">Abastecimentos</div></div>
     <div class="metrica"><div class="valor">${formatarNumero(totalKm)}</div><div class="rotulo">Km rodado total</div></div>
     <div class="metrica"><div class="valor">${formatarNumero(totalLitros,1)}</div><div class="rotulo">Litros totais</div></div>
     <div class="metrica"><div class="valor">${mediaGeral? formatarNumero(mediaGeral,2) : '—'}</div><div class="rotulo">Média geral (km/l)</div></div>
   `;
 
+  // Os graficos sempre mostram a tendencia de TODOS os periodos (para dar contexto),
+  // independente do chip de periodo selecionado acima.
   const grupos = {};
   filtrado.forEach(d=>{
     const per = periodoDaLinha(d, periodoAtivo);
@@ -333,7 +378,7 @@ function atualizar(){
 
   const tbody = document.querySelector('#tabela tbody');
   tbody.innerHTML = '';
-  filtrado
+  filtradoPeriodo
     .slice()
     .sort((a,b)=> new Date(b.data_emissao) - new Date(a.data_emissao))
     .forEach(d=>{
@@ -381,6 +426,7 @@ Papa.parse('base_abastecimentos.csv?v=' + Date.now(), {
       return;
     }
     montarFiltroPlacas();
+    montarChipsPeriodo();
     atualizar();
   },
   error: function(){
