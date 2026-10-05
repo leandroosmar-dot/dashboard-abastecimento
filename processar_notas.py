@@ -14,6 +14,9 @@ ARQUIVO_SAIDA = "base_abastecimentos.csv"
 
 PLACAS_EXCLUIDAS = {"HWP5C65", "FRP3J31", "LXV8E52", "HBN8A85"}
 
+# Placas digitadas errado na nota pelo posto -> placa correta
+PLACAS_CORRIGIDAS = {"MLX8C25": "MLX8C23"}
+
 
 def processar():
     arquivos = glob.glob(os.path.join(PASTA_XML, "*.xml"))
@@ -63,6 +66,7 @@ def processar():
             print(f"  - {a}")
     df = df[~(df["litros"].isna() | (df["litros"] == 0))]
 
+    df["placa"] = df["placa"].replace(PLACAS_CORRIGIDAS)
     df = df[~df["placa"].isin(PLACAS_EXCLUIDAS)]
 
     df = df.sort_values(["placa", "data_emissao"]).reset_index(drop=True)
