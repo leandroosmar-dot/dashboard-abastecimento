@@ -80,10 +80,19 @@ def extrair_dados_nfe(caminho_xml):
 
     litros_total = 0.0
     nomes_produtos = []
+    valor_arla = 0.0  # ARLA nao conta: sai dos litros e do valor
     for p in produtos:
         qcom_el = p.find("nfe:qCom", NS)
         xprod_el = p.find("nfe:xProd", NS)
         ucom_el = p.find("nfe:uCom", NS)
+        nome_prod = (xprod_el.text or "").upper() if xprod_el is not None else ""
+        if "ARLA" in nome_prod:
+            vprod_el = p.find("nfe:vProd", NS)
+            vdesc_el = p.find("nfe:vDesc", NS)
+            vprod = float(vprod_el.text) if vprod_el is not None and vprod_el.text else 0.0
+            vdesc = float(vdesc_el.text) if vdesc_el is not None and vdesc_el.text else 0.0
+            valor_arla += vprod - vdesc
+            continue
         eh_litro = ucom_el is not None and ucom_el.text and ucom_el.text.strip().upper() == "L"
         if eh_litro and qcom_el is not None and qcom_el.text:
             litros_total += float(qcom_el.text)
@@ -92,7 +101,7 @@ def extrair_dados_nfe(caminho_xml):
     combustivel_nome = " + ".join(dict.fromkeys(nomes_produtos)) if nomes_produtos else None
 
     if vNF_el is not None and vNF_el.text:
-        valor_pago = float(vNF_el.text)
+        valor_pago = float(vNF_el.text) - valor_arla
     else:
         valor_pago = sum(
             float(p.find("nfe:vProd", NS).text)
