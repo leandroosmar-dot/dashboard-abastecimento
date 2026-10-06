@@ -12,7 +12,7 @@ from extrator import extrair_dados_nfe
 PASTA_XML = "notas_xml"
 ARQUIVO_SAIDA = "base_abastecimentos.csv"
 
-PLACAS_EXCLUIDAS = {"HWP5C65", "FRP3J31", "LXV8E52", "HBN8A85"}
+PLACAS_EXCLUIDAS = {"HWP5C65", "FRP3J31", "LXV8E52", "HBN8A85", "AJQ3G51", "IZT1D19"}
 
 # Placas digitadas errado na nota pelo posto -> placa correta
 PLACAS_CORRIGIDAS = {"MLX8C25": "MLX8C23"}
